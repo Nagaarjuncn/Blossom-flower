@@ -1,0 +1,983 @@
+/* ==========================================================================
+   🌸 Gesture Flower — Full Stack Interactive Garden Style System
+   ========================================================================== */
+
+:root {
+  --font-display: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-body: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+
+  --bg-dark: #060e0a;
+  --bg-card: rgba(16, 32, 23, 0.65);
+  --bg-glass: rgba(255, 255, 255, 0.05);
+  --border-glass: rgba(255, 255, 255, 0.12);
+  --border-active: rgba(163, 230, 53, 0.5);
+
+  --color-primary: #a3e635;
+  --color-primary-glow: rgba(163, 230, 53, 0.35);
+  --color-blossom: #fb7185;
+  --color-blossom-glow: rgba(251, 113, 133, 0.4);
+  --color-gold: #fbbf24;
+
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+
+  --radius-sm: 10px;
+  --radius-md: 18px;
+  --radius-lg: 26px;
+  --radius-full: 9999px;
+
+  --shadow-lg: 0 20px 50px -10px rgba(0, 0, 0, 0.6);
+  --shadow-glow: 0 0 25px var(--color-primary-glow);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--bg-dark);
+  color: var(--text-main);
+  min-height: 100vh;
+  overflow-x: hidden;
+  position: relative;
+  background-image: 
+    radial-gradient(circle at 50% 15%, #133924 0%, #081a11 45%, #040906 100%);
+}
+
+/* Subtle background ambient glowing orbs */
+.background-glow {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(110px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.28;
+}
+.glow-1 {
+  top: -100px;
+  left: 20%;
+  width: 500px;
+  height: 500px;
+  background: radial-gradient(circle, #22c55e, #15803d);
+}
+.glow-2 {
+  bottom: -150px;
+  right: 15%;
+  width: 550px;
+  height: 550px;
+  background: radial-gradient(circle, #ec4899, #be185d);
+}
+
+/* App Container */
+.app {
+  width: min(1200px, 94vw);
+  margin: 0 auto;
+  padding: 24px 0 32px;
+  position: relative;
+  z-index: 1;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-icon {
+  font-size: 32px;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, rgba(163, 230, 53, 0.2), rgba(251, 113, 133, 0.2));
+  border: 1px solid var(--border-glass);
+  box-shadow: var(--shadow-glow);
+}
+
+.eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  color: var(--color-primary);
+  text-transform: uppercase;
+}
+
+h1 {
+  font-family: var(--font-display);
+  font-size: clamp(24px, 3.8vw, 36px);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  background: linear-gradient(90deg, #ffffff 40%, #a3e635 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #bef264 0%, #84cc16 100%);
+  color: #0f290d;
+  box-shadow: 0 4px 18px rgba(132, 204, 22, 0.35);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 6px 24px rgba(132, 204, 22, 0.55);
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  backdrop-filter: blur(12px);
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.btn-icon {
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  cursor: pointer;
+  font-size: 16px;
+  transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+/* Stage Area */
+.stage-wrapper {
+  position: relative;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 10px;
+  box-shadow: var(--shadow-lg);
+  backdrop-filter: blur(16px);
+}
+
+.stage {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: calc(var(--radius-lg) - 8px);
+  overflow: hidden;
+  background: #020604;
+  box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.85);
+}
+
+/* Camera Video */
+video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scaleX(-1);
+  opacity: 0.88;
+  filter: contrast(1.03) brightness(0.97);
+}
+
+/* Canvas Overlay */
+#overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  transform: scaleX(-1);
+  pointer-events: none;
+  z-index: 5;
+}
+
+/* Floating Status Badge */
+.floating-badge {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 20px;
+  border-radius: var(--radius-full);
+  background: rgba(8, 22, 15, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  backdrop-filter: blur(16px);
+  color: var(--text-main);
+  font-size: 13.5px;
+  font-weight: 600;
+  z-index: 10;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  transition: all 0.3s ease;
+}
+
+.badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 10px var(--color-primary);
+  animation: pulse-dot 2s infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Real-Time Telemetry HUD */
+.telemetry-hud {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.telemetry-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 12px;
+  border-radius: var(--radius-sm);
+  background: rgba(7, 18, 13, 0.78);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.hand-label {
+  font-weight: 700;
+  color: #e2e8f0;
+  width: 70px;
+}
+
+.pinch-meter-wrap {
+  width: 60px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+
+.pinch-meter-bar {
+  height: 100%;
+  width: 0%;
+  background: #38bdf8;
+  border-radius: 3px;
+  transition: width 0.1s linear, background-color 0.2s;
+}
+
+.telemetry-item.pinching .pinch-meter-bar {
+  background: var(--color-primary);
+  box-shadow: 0 0 8px var(--color-primary);
+}
+
+.pinch-tag {
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-dim);
+}
+
+.telemetry-item.pinching .pinch-tag {
+  background: rgba(163, 230, 53, 0.25);
+  color: var(--color-primary);
+}
+
+/* Stage Action Controls */
+.stage-controls {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  z-index: 10;
+}
+
+.btn-stage {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(11, 28, 19, 0.85);
+  border: 1px solid var(--border-glass);
+  color: var(--text-main);
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  transition: all 0.2s ease;
+}
+
+.btn-stage:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-save-garden {
+  background: linear-gradient(135deg, rgba(251, 113, 133, 0.25), rgba(244, 63, 94, 0.4));
+  border-color: rgba(251, 113, 133, 0.5);
+  color: #ffe4e6;
+  opacity: 0.6;
+  pointer-events: none;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.btn-save-garden.active {
+  opacity: 1;
+  pointer-events: auto;
+  box-shadow: 0 0 20px rgba(251, 113, 133, 0.4);
+  animation: save-pulse 2s infinite;
+}
+
+@keyframes save-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+/* Camera Error Notice */
+.camera-error {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  max-width: 80%;
+  padding: 16px 24px;
+  border-radius: var(--radius-md);
+  background: rgba(36, 12, 15, 0.95);
+  border: 1px solid rgba(248, 113, 113, 0.4);
+  color: #fca5a5;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  z-index: 25;
+  display: none;
+}
+
+/* ==========================================================================
+   Center Botanical Flower World (CSS 3D Bloom Animation)
+   ========================================================================== */
+.flower-world {
+  position: absolute;
+  left: 50%;
+  bottom: 6%;
+  width: 190px;
+  height: 420px;
+  transform: translateX(-50%);
+  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.7));
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  z-index: 6;
+}
+
+/* Hide center stage flower if user chose hand-only mode */
+.flower-world.hidden {
+  display: none;
+}
+
+/* Stem */
+.stem {
+  position: absolute;
+  left: 91px;
+  bottom: 0;
+  width: 8px;
+  height: 290px;
+  border-radius: 8px;
+  background: linear-gradient(90deg, #154627, #65a30d, #144425);
+  transform-origin: bottom center;
+  transition: height 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  box-shadow: inset 0 0 4px rgba(0,0,0,0.5);
+}
+
+/* Foliage leaves */
+.leaf {
+  position: absolute;
+  width: 76px;
+  height: 36px;
+  background: linear-gradient(135deg, #84cc16 0%, #166534 100%);
+  border-radius: 100% 0 100% 0;
+  bottom: 115px;
+  filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+}
+
+.leaf-left {
+  left: 20px;
+  transform: rotate(-28deg);
+  animation: leaf-sway-left 4s ease-in-out infinite;
+}
+
+.leaf-right {
+  right: 18px;
+  transform: scaleX(-1) rotate(-28deg);
+  animation: leaf-sway-right 4.5s ease-in-out infinite;
+}
+
+@keyframes leaf-sway-left {
+  0%, 100% { transform: rotate(-28deg); }
+  50% { transform: rotate(-23deg); }
+}
+@keyframes leaf-sway-right {
+  0%, 100% { transform: scaleX(-1) rotate(-28deg); }
+  50% { transform: scaleX(-1) rotate(-23deg); }
+}
+
+/* Bud Stage */
+.bud {
+  position: absolute;
+  left: 50%;
+  bottom: 275px;
+  width: 64px;
+  height: 86px;
+  transform: translateX(-50%);
+  z-index: 3;
+  transition: transform 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease;
+}
+
+.bud span {
+  position: absolute;
+  left: 14px;
+  top: 8px;
+  width: 36px;
+  height: 70px;
+  background: linear-gradient(90deg, #22543d, #84cc16, #2f855a);
+  border-radius: 70% 70% 50% 50%;
+  transform-origin: bottom center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.bud span:nth-child(1) { transform: rotate(-38deg); }
+.bud span:nth-child(2) { transform: rotate(-19deg); }
+.bud span:nth-child(3) { transform: rotate(0); }
+.bud span:nth-child(4) { transform: rotate(19deg); }
+.bud span:nth-child(5) { transform: rotate(38deg); }
+
+/* Full Flower Stage */
+.flower {
+  position: absolute;
+  left: 50%;
+  bottom: 305px;
+  width: 150px;
+  height: 150px;
+  transform: translate(-50%, 50%) scale(0.12);
+  opacity: 0;
+  transition: transform 0.9s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.45s ease;
+  z-index: 4;
+}
+
+.petal {
+  position: absolute;
+  left: 48px;
+  top: 6px;
+  width: 54px;
+  height: 86px;
+  border-radius: 55% 55% 48% 48%;
+  background: radial-gradient(circle at 50% 80%, #fef08a 0%, #f472b6 45%, #be123c 100%);
+  transform-origin: 50% 66px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.p1 { transform: rotate(0deg); }
+.p2 { transform: rotate(60deg); }
+.p3 { transform: rotate(120deg); }
+.p4 { transform: rotate(180deg); }
+.p5 { transform: rotate(240deg); }
+.p6 { transform: rotate(300deg); }
+
+.center-glow {
+  position: absolute;
+  left: 35px;
+  top: 35px;
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(251, 191, 36, 0.6) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.center {
+  position: absolute;
+  left: 52px;
+  top: 53px;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle, #fef08a, #d97706 75%);
+  box-shadow: 0 0 30px #f59e0b;
+}
+
+/* Stage Modes: Transitions */
+/* Flower Mode */
+.flower-world.flower-mode .bud {
+  transform: translateX(-50%) scale(0.15);
+  opacity: 0;
+}
+.flower-world.flower-mode .flower {
+  opacity: 1;
+  transform: translate(-50%, 50%) scale(0.75);
+}
+
+/* Blossom Mode */
+.flower-world.blossom-mode .stem {
+  height: 335px;
+}
+.flower-world.blossom-mode .flower {
+  transform: translate(-50%, 50%) scale(1.12);
+}
+.flower-world.blossom-mode .petal {
+  animation: petal-bloom 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes petal-bloom {
+  0% { filter: blur(2px); transform: scale(0.6); }
+  100% { filter: none; }
+}
+
+/* ==========================================================================
+   Controls Grid (Step Cards)
+   ========================================================================== */
+.controls-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+  overflow: hidden;
+}
+
+.card-step-badge {
+  position: absolute;
+  top: 10px;
+  right: 14px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-dim);
+}
+
+.card-icon {
+  font-size: 30px;
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.card-content b {
+  display: block;
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--text-main);
+  margin-bottom: 3px;
+}
+
+.card-content p {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.card-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: transparent;
+  transition: background 0.3s ease;
+}
+
+/* Active Step Card state */
+.card.active {
+  border-color: var(--border-active);
+  background: rgba(24, 48, 34, 0.85);
+  box-shadow: 0 0 20px rgba(163, 230, 53, 0.15);
+  transform: translateY(-2px);
+}
+.card.active .card-step-badge {
+  color: var(--color-primary);
+}
+.card.active .card-indicator {
+  background: linear-gradient(90deg, #bef264, #22c55e);
+}
+
+/* ==========================================================================
+   Footer Status
+   ========================================================================== */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 18px;
+  padding: 10px 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.status-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #475569;
+  transition: all 0.3s ease;
+}
+
+.status-indicator.active {
+  background: var(--color-primary);
+  box-shadow: 0 0 10px var(--color-primary);
+}
+
+.server-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border-radius: var(--radius-full);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+}
+
+.server-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #eab308;
+}
+
+.server-dot.online {
+  background: #22c55e;
+  box-shadow: 0 0 8px #22c55e;
+}
+
+.footer-hint code {
+  color: var(--color-primary);
+  background: rgba(163, 230, 53, 0.1);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ==========================================================================
+   Modals & Drawers
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 4, 0.75);
+  backdrop-filter: blur(12px);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+  padding: 20px;
+}
+
+.modal-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-dialog {
+  width: min(650px, 92vw);
+  max-height: 85vh;
+  background: #0b1c13;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.85);
+  display: flex;
+  flex-direction: column;
+  transform: scale(0.95) translateY(10px);
+  transition: transform 0.25s ease;
+  overflow: hidden;
+}
+
+.modal-backdrop.open .modal-dialog {
+  transform: scale(1) translateY(0);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.modal-title h2 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.modal-body {
+  padding: 20px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.modal-desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+}
+
+/* Garden Grid */
+.garden-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.garden-item {
+  position: relative;
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-glass);
+  overflow: hidden;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.garden-item:hover {
+  transform: translateY(-2px);
+  border-color: rgba(251, 113, 133, 0.5);
+}
+
+.garden-thumb {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: #040906;
+  display: block;
+}
+
+.garden-item-info {
+  padding: 12px;
+}
+
+.garden-item-title {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 4px;
+}
+
+.garden-item-date {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.garden-delete-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: rgba(0, 0, 0, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #ffb4b4;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  cursor: pointer;
+}
+.garden-delete-btn:hover {
+  background: #dc2626;
+  color: #fff;
+}
+
+.garden-empty {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+  font-size: 14px;
+  grid-column: 1 / -1;
+}
+
+/* Settings Form */
+.setting-item {
+  padding: 16px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.setting-item:last-child {
+  border-bottom: none;
+}
+
+.setting-item.switch-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.setting-label b {
+  display: block;
+  font-size: 14px;
+  color: var(--text-main);
+  margin-bottom: 3px;
+}
+
+.setting-label span {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 10px;
+}
+
+.slider-row input[type="range"] {
+  flex: 1;
+  accent-color: var(--color-primary);
+}
+
+.form-select {
+  width: 100%;
+  margin-top: 10px;
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-glass);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+/* Toast */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(100px);
+  padding: 12px 24px;
+  background: #0f291a;
+  border: 1px solid var(--border-active);
+  color: #fff;
+  border-radius: var(--radius-full);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  z-index: 200;
+  transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+
+.toast.show {
+  transform: translateX(-50%) translateY(0);
+}
+
+/* Responsive adjustments */
+@media (max-width: 840px) {
+  .controls-grid {
+    grid-template-columns: 1fr;
+  }
+  .header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .header-actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  .flower-world {
+    transform: translateX(-50%) scale(0.82);
+    transform-origin: bottom center;
+  }
+}

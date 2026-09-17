@@ -1,0 +1,7 @@
+{
+  "pinchSensitivity": 0.38,
+  "growthSpeed": 0.06,
+  "soundEnabled": true,
+  "mirrorCamera": true,
+  "visualizationMode": "both"
+}

@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Full-stack interactive webcam gesture-controlled flower blossom web application with MediaPipe Hands tracking, Web Audio, and localhost persistence.">
+  <title>🌸 Gesture Flower — Full Stack Interactive Garden</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="background-glow glow-1"></div>
+  <div class="background-glow glow-2"></div>
+
+  <main class="app">
+    <!-- TOP NAVBAR / HEADER -->
+    <header class="header">
+      <div class="brand">
+        <div class="logo-icon">🌸</div>
+        <div>
+          <div class="eyebrow">FULL-STACK CAM INTERACTION</div>
+          <h1>Gesture Flower Garden</h1>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <button id="soundToggleBtn" class="btn btn-secondary" title="Toggle Sound">
+          <span id="soundIcon">🔊</span>
+          <span class="btn-text">Sound</span>
+        </button>
+        <button id="galleryOpenBtn" class="btn btn-secondary" title="View Saved Blooms">
+          <span>🌺</span>
+          <span class="btn-text">Garden (<span id="gardenCount">0</span>)</span>
+        </button>
+        <button id="settingsOpenBtn" class="btn btn-icon" title="Settings">
+          <span>⚙️</span>
+        </button>
+        <button id="startBtn" class="btn btn-primary">
+          <span class="cam-icon">📹</span>
+          <span id="startBtnText">Start Camera</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- MAIN INTERACTIVE STAGE -->
+    <section class="stage-wrapper">
+      <div class="stage" id="stage">
+        <!-- Live Webcam Video -->
+        <video id="video" autoplay playsinline muted></video>
+
+        <!-- Dynamic Canvas Overlay (hand skeleton, hand-anchored flower, sparkle particles) -->
+        <canvas id="overlay"></canvas>
+
+        <!-- Center Botanical 3D Flower World -->
+        <div class="flower-world" id="flowerWorld">
+          <div class="stem"></div>
+          <div class="leaf leaf-left"></div>
+          <div class="leaf leaf-right"></div>
+          <!-- Bud State Elements -->
+          <div class="bud" id="bud">
+            <span></span><span></span><span></span><span></span><span></span>
+          </div>
+          <!-- Full Flower State Elements -->
+          <div class="flower" id="flower">
+            <div class="petal p1"></div>
+            <div class="petal p2"></div>
+            <div class="petal p3"></div>
+            <div class="petal p4"></div>
+            <div class="petal p5"></div>
+            <div class="petal p6"></div>
+            <div class="center-glow"></div>
+            <div class="center"></div>
+          </div>
+        </div>
+
+        <!-- Floating Stage Status Badge -->
+        <div class="floating-badge" id="message">
+          <span class="badge-dot"></span>
+          <span id="messageText">Click “Start Camera” to begin</span>
+        </div>
+
+        <!-- Real-time Gesture Telemetry HUD -->
+        <div class="telemetry-hud" id="telemetryHud">
+          <div class="telemetry-item" id="rightTelemetry">
+            <div class="hand-label">Right Hand</div>
+            <div class="pinch-meter-wrap">
+              <div class="pinch-meter-bar" id="rightPinchBar"></div>
+            </div>
+            <span class="pinch-tag" id="rightPinchTag">Ready</span>
+          </div>
+          <div class="telemetry-item" id="leftTelemetry">
+            <div class="hand-label">Left Hand</div>
+            <div class="pinch-meter-wrap">
+              <div class="pinch-meter-bar" id="leftPinchBar"></div>
+            </div>
+            <span class="pinch-tag" id="leftPinchTag">Ready</span>
+          </div>
+        </div>
+
+        <!-- Floating Stage Quick Actions -->
+        <div class="stage-controls">
+          <button id="resetBtn" class="btn-stage" title="Reset Flower">
+            <span>🔄</span> Reset
+          </button>
+          <button id="saveGardenBtn" class="btn-stage btn-save-garden" title="Save this bloom to your persistent garden">
+            <span>✨</span> Save to Garden
+          </button>
+        </div>
+
+        <!-- Camera Error Notification -->
+        <div class="camera-error" id="error"></div>
+      </div>
+    </section>
+
+    <!-- GESTURE STEP CARDS -->
+    <section class="controls-grid">
+      <div class="card" id="cardStep1">
+        <div class="card-step-badge">1</div>
+        <div class="card-icon">✋</div>
+        <div class="card-content">
+          <b>1. Raise Your Hand</b>
+          <p>Any hand visible in frame sprouts a green botanical bud 🌱</p>
+        </div>
+        <div class="card-indicator"></div>
+      </div>
+
+      <div class="card" id="cardStep2">
+        <div class="card-step-badge">2</div>
+        <div class="card-icon">🤏</div>
+        <div class="card-content">
+          <b>2. Hold Right Pinch</b>
+          <p>Hold thumb & index to bloom into a flower 🌸 (Release to return to bud)</p>
+        </div>
+        <div class="card-indicator"></div>
+      </div>
+
+      <div class="card" id="cardStep3">
+        <div class="card-step-badge">3</div>
+        <div class="card-icon">✨</div>
+        <div class="card-content">
+          <b>3. Hold Left Pinch</b>
+          <p>Hold left thumb & index for radiant blossom 🌟 (Release to return to bud)</p>
+        </div>
+        <div class="card-indicator"></div>
+      </div>
+    </section>
+
+    <!-- FOOTER INFO & LOCALHOST STATUS -->
+    <footer class="footer">
+      <div class="status-group">
+        <span class="status-indicator" id="statusDot"></span>
+        <span id="statusText">Camera idle</span>
+      </div>
+      <div class="server-status" id="serverStatusBadge">
+        <span class="server-dot"></span>
+        <span id="serverStatusText">Connecting to localhost:3000...</span>
+      </div>
+      <div class="footer-hint">
+        Runs locally on your machine via <code>http://localhost:3000</code>
+      </div>
+    </footer>
+  </main>
+
+  <!-- GARDEN GALLERY DRAWER / MODAL -->
+  <div class="modal-backdrop" id="gardenModalBackdrop">
+    <div class="modal-dialog" id="gardenModal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>🌺</span>
+          <h2>Saved Blossom Garden</h2>
+        </div>
+        <button id="galleryCloseBtn" class="btn-icon">✕</button>
+      </div>
+      <div class="modal-body">
+        <p class="modal-desc">Blooms saved to your backend persistent storage (`/api/garden`):</p>
+        <div class="garden-grid" id="gardenGrid">
+          <div class="garden-loading">Loading saved blossoms...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS DRAWER / MODAL -->
+  <div class="modal-backdrop" id="settingsModalBackdrop">
+    <div class="modal-dialog settings-modal" id="settingsModal">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>⚙️</span>
+          <h2>Interaction Settings</h2>
+        </div>
+        <button id="settingsCloseBtn" class="btn-icon">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-item">
+          <div class="setting-label">
+            <b>Pinch Sensitivity Threshold</b>
+            <span>Lower = triggers more easily; Higher = requires tighter pinch</span>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="sensitivitySlider" min="0.2" max="0.55" step="0.01" value="0.35">
+            <span id="sensitivityValue">0.35</span>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-label">
+            <b>Flower Animation Lerp Speed</b>
+            <span>Controls smooth growth animation between gesture stages</span>
+          </div>
+          <div class="slider-row">
+            <input type="range" id="speedSlider" min="0.02" max="0.15" step="0.01" value="0.06">
+            <span id="speedValue">0.06</span>
+          </div>
+        </div>
+
+        <div class="setting-item">
+          <div class="setting-label">
+            <b>Visualization Mode</b>
+            <span>Select how flowers appear on screen</span>
+          </div>
+          <select id="visModeSelect" class="form-select">
+            <option value="both" selected>Both (Hand-Anchored + Center Stage)</option>
+            <option value="center">Center Stage Garden Only</option>
+            <option value="hand">Hand-Anchored Canvas Petals Only</option>
+          </select>
+        </div>
+
+        <div class="setting-item switch-item">
+          <div class="setting-label">
+            <b>Mirror Webcam (Selfie Mode)</b>
+            <span>Mirrors camera feed for natural interaction</span>
+          </div>
+          <input type="checkbox" id="mirrorToggle" checked>
+        </div>
+
+        <div class="setting-item switch-item">
+          <div class="setting-label">
+            <b>Synthesizer Sound Effects</b>
+            <span>Procedural ambient audio on flower blooming</span>
+          </div>
+          <input type="checkbox" id="soundSettingToggle" checked>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION -->
+  <div class="toast" id="toast"></div>
+
+  <!-- DEPENDENCY SCRIPTS -->
+  <!-- Web Audio Synthesizer -->
+  <script src="sound.js"></script>
+  <!-- MediaPipe Hands & Camera Utils (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+  <!-- Application Script -->
+  <script src="script.js"></script>
+</body>
+</html>
