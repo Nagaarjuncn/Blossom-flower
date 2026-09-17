@@ -89,6 +89,8 @@ let lastHandSeenAt = 0;
 const HAND_LOST_GRACE_MS = 900;
 let unpinchFrames = 0;
 let sparkleAngle = 0;
+let isGlowing = false;
+let lastTwinkleSoundTime = 0;
 
 // --- Helper Functions ---
 function showToast(msg) {
@@ -123,6 +125,130 @@ function isHandRaised(landmarks) {
   return landmarks[8].y < landmarks[6].y && landmarks[12].y < landmarks[10].y;
 }
 
+// Check if hand is closed into a fist
+function checkHandClosed(landmarks) {
+  const wrist = landmarks[0];
+  const middleMcp = landmarks[9];
+  const handScale = dist(wrist, middleMcp) || 0.0001;
+
+  const fingers = [
+    { tip: 8, pip: 6, mcp: 5 },   // Index
+    { tip: 12, pip: 10, mcp: 9 }, // Middle
+    { tip: 16, pip: 14, mcp: 13 },// Ring
+    { tip: 20, pip: 18, mcp: 17 } // Pinky
+  ];
+
+  let curledCount = 0;
+  let totalCurl = 0;
+
+  for (const f of fingers) {
+    const tipToWrist = dist(landmarks[f.tip], wrist);
+    const pipToWrist = dist(landmarks[f.pip], wrist);
+    const mcpToWrist = dist(landmarks[f.mcp], wrist);
+
+    // Tip is curled towards wrist if closer than PIP or near MCP
+    const isCurled = (tipToWrist < pipToWrist * 1.02) || (tipToWrist < mcpToWrist * 1.15);
+    if (isCurled) curledCount++;
+
+    const span = (pipToWrist - mcpToWrist) || (handScale * 0.4);
+    const curlScore = Math.max(0, Math.min(1.0, (pipToWrist - tipToWrist + span * 0.5) / span));
+    totalCurl += curlScore;
+  }
+
+  const avgCurl = totalCurl / fingers.length;
+  // Closed if at least 3 fingers are curled and avgCurl >= 0.48, or all 4 curled
+  const isClosed = (curledCount >= 3 && avgCurl >= 0.48) || (curledCount === 4);
+
+  return {
+    isClosed,
+    curlRatio: Math.min(1.0, Math.max(0, avgCurl)),
+    curledCount
+  };
+}
+
+// --- Diamond Star Particles System ---
+const diamondParticles = [];
+const MAX_DIAMOND_PARTICLES = 45;
+
+function spawnDiamondParticle(originX, originY) {
+  if (diamondParticles.length >= MAX_DIAMOND_PARTICLES) return;
+  const angle = Math.random() * Math.PI * 2;
+  const distOffset = 10 + Math.random() * 85;
+  diamondParticles.push({
+    x: originX + Math.cos(angle) * distOffset,
+    y: originY + Math.sin(angle) * distOffset,
+    vx: (Math.random() - 0.5) * 1.0,
+    vy: -0.7 - Math.random() * 1.5,
+    outerRadius: 6 + Math.random() * 14,
+    innerRadius: 1.8 + Math.random() * 3.5,
+    rotation: Math.random() * Math.PI * 2,
+    rotSpeed: (Math.random() - 0.5) * 0.1,
+    alpha: 0.1,
+    maxAlpha: 0.75 + Math.random() * 0.25,
+    life: 0,
+    maxLife: 45 + Math.floor(Math.random() * 45),
+    twinklePhase: Math.random() * Math.PI * 2,
+    color: Math.random() > 0.45 ? "#ffffff" : (Math.random() > 0.5 ? "#67e8f9" : "#fef08a")
+  });
+}
+
+function updateAndDrawDiamondParticles(ctx) {
+  for (let i = diamondParticles.length - 1; i >= 0; i--) {
+    const p = diamondParticles[i];
+    p.life++;
+    p.x += p.vx;
+    p.y += p.vy;
+    p.rotation += p.rotSpeed;
+    p.twinklePhase += 0.14;
+
+    const lifeRatio = p.life / p.maxLife;
+    const baseAlpha = lifeRatio < 0.2 ? (lifeRatio / 0.2) : (1 - (lifeRatio - 0.2) / 0.8);
+    const twinkleMod = 0.5 + 0.5 * Math.sin(p.twinklePhase);
+    p.alpha = Math.max(0, Math.min(1, baseAlpha * p.maxAlpha * twinkleMod));
+
+    drawDiamondStar(ctx, p.x, p.y, 4, p.outerRadius, p.innerRadius, p.rotation, p.alpha, p.color);
+
+    if (p.life >= p.maxLife) {
+      diamondParticles.splice(i, 1);
+    }
+  }
+}
+
+function drawDiamondStar(ctx, cx, cy, spikes, outerRadius, innerRadius, rotation, alpha, color) {
+  if (alpha <= 0.01) return;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.rotate(rotation);
+  ctx.globalAlpha = alpha;
+
+  ctx.fillStyle = color;
+  ctx.shadowColor = "#67e8f9";
+  ctx.shadowBlur = 12 * alpha;
+
+  ctx.beginPath();
+  let rot = -Math.PI / 2;
+  const step = Math.PI / spikes;
+
+  ctx.moveTo(0, -outerRadius);
+  for (let i = 0; i < spikes; i++) {
+    ctx.lineTo(Math.cos(rot) * outerRadius, Math.sin(rot) * outerRadius);
+    rot += step;
+    ctx.lineTo(Math.cos(rot) * innerRadius, Math.sin(rot) * innerRadius);
+    rot += step;
+  }
+  ctx.closePath();
+  ctx.fill();
+
+  // Brilliant core specular glint
+  ctx.beginPath();
+  ctx.fillStyle = "#ffffff";
+  ctx.arc(0, 0, innerRadius * 0.9, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+
 // --- State Machine Transition Handler ---
 function transitionStage(nextStage) {
   if (currentStage === nextStage) return;
@@ -136,7 +262,7 @@ function transitionStage(nextStage) {
   // Update step cards highlight
   cardStep1.classList.toggle("active", currentStage === STAGES.BUD);
   cardStep2.classList.toggle("active", currentStage === STAGES.FLOWER);
-  cardStep3.classList.toggle("active", currentStage === STAGES.BLOSSOM);
+  cardStep3.classList.toggle("active", currentStage === STAGES.BLOSSOM || isGlowing);
 
   // Save to Garden button visibility (only at blossom)
   if (currentStage === STAGES.BLOSSOM) {
@@ -178,13 +304,17 @@ function resetState() {
   unpinchFrames = 0;
   transitionStage(STAGES.NONE);
   growth = 0;
+  isGlowing = false;
+  diamondParticles.length = 0;
+  flowerWorld.classList.remove("glowing-mode");
+  cardStep3.classList.remove("glowing");
   showToast("Flower state reset");
 }
 
 resetBtn.addEventListener("click", resetState);
 
 // --- Drawing Functions on Canvas ---
-function drawHandSkeleton(landmarks, isPinching) {
+function drawHandSkeleton(landmarks, isPinching, isClosed = false) {
   if (window.drawConnectors && window.HAND_CONNECTIONS) {
     const points = landmarks.map(p => ({
       x: config.mirrorCamera ? (1 - p.x) : p.x,
@@ -193,11 +323,11 @@ function drawHandSkeleton(landmarks, isPinching) {
     }));
 
     drawConnectors(ctx, points, HAND_CONNECTIONS, {
-      color: isPinching ? "#a3e635" : "#38bdf8",
+      color: isClosed ? "#67e8f9" : (isPinching ? "#a3e635" : "#38bdf8"),
       lineWidth: 3
     });
     drawLandmarks(ctx, points, {
-      color: isPinching ? "#bef264" : "#ffffff",
+      color: isClosed ? "#ffffff" : (isPinching ? "#bef264" : "#ffffff"),
       lineWidth: 1,
       radius: 3
     });
@@ -268,6 +398,24 @@ function drawCanvasFlower(nx, ny, stage, currentGrowth) {
   ctx.arc(0, 0, baseSize * 0.14 * scaleFactor, 0, Math.PI * 2);
   ctx.fill();
 
+  // Radiant glow and diamond twinklings on left-hand closed glow mode
+  if (isGlowing) {
+    const auraGrad = ctx.createRadialGradient(0, 0, baseSize * 0.1, 0, 0, baseSize * 1.15);
+    auraGrad.addColorStop(0, "rgba(255, 255, 255, 0.85)");
+    auraGrad.addColorStop(0.35, "rgba(56, 189, 248, 0.5)");
+    auraGrad.addColorStop(0.7, "rgba(254, 240, 138, 0.35)");
+    auraGrad.addColorStop(1, "rgba(236, 72, 153, 0)");
+    ctx.fillStyle = auraGrad;
+    ctx.beginPath();
+    ctx.arc(0, 0, baseSize * 1.15, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Spawn diamond twinkling star particles
+    if (Math.random() < 0.75) {
+      spawnDiamondParticle(x, y);
+    }
+  }
+
   // Orbiting celestial sparkle particles on full blossom
   if (currentGrowth > 0.9) {
     sparkleAngle += 0.04;
@@ -306,10 +454,14 @@ function onResults(results) {
   let rightRatioDisplay = 1.0;
   let leftRatioDisplay = 1.0;
 
+  let leftHandClosed = false;
+  let leftCloseRatio = 0;
+
   for (let i = 0; i < hands.length; i++) {
     const landmarks = hands[i];
     const label = handedness[i]?.label; // "Left" or "Right"
     const pinchResult = checkPinch(landmarks);
+    const closedResult = checkHandClosed(landmarks);
     const raised = isHandRaised(landmarks);
 
     if (label === "Right") {
@@ -319,17 +471,40 @@ function onResults(results) {
     if (label === "Left") {
       leftRatioDisplay = pinchResult.ratio;
       if (pinchResult.isPinching) leftPinching = true;
+      if (closedResult.isClosed) leftHandClosed = true;
+      leftCloseRatio = closedResult.curlRatio;
     }
 
     if (raised) anyHandRaisedInFrame = true;
     refHand = landmarks;
 
-    // Draw hand skeleton
-    drawHandSkeleton(landmarks, pinchResult.isPinching);
+    // Draw hand skeleton with highlight
+    drawHandSkeleton(landmarks, pinchResult.isPinching, (label === "Left" && closedResult.isClosed));
+  }
+
+  // Handle Glowing State from Left Hand Closed
+  isGlowing = leftHandClosed;
+  flowerWorld.classList.toggle("glowing-mode", isGlowing);
+  cardStep3.classList.toggle("glowing", isGlowing);
+
+  if (isGlowing) {
+    const nowAudio = performance.now();
+    if (nowAudio - lastTwinkleSoundTime > 600) {
+      window.soundEngine.playDiamondTwinkle();
+      lastTwinkleSoundTime = nowAudio;
+    }
+    // Spawn ambient diamond stars around center flower stage
+    if (config.visualizationMode !== "hand") {
+      const centerX = canvasElement.width * 0.5;
+      const centerY = canvasElement.height * 0.58;
+      if (Math.random() < 0.65) {
+        spawnDiamondParticle(centerX, centerY);
+      }
+    }
   }
 
   // Update HUD Telemetry
-  updateTelemetryUI(rightPinching, rightRatioDisplay, leftPinching, leftRatioDisplay);
+  updateTelemetryUI(rightPinching, rightRatioDisplay, leftPinching, leftRatioDisplay, leftHandClosed, leftCloseRatio);
 
   // Update Plant Anchor Position
   const now = performance.now();
@@ -349,7 +524,7 @@ function onResults(results) {
   if (anyHandRaisedInFrame || handRecentlySeen) {
     let nextStage;
 
-    if (leftPinching) {
+    if (leftHandClosed || leftPinching) {
       unpinchFrames = 0;
       nextStage = STAGES.BLOSSOM;
     } else if (rightPinching) {
@@ -366,6 +541,9 @@ function onResults(results) {
     }
 
     transitionStage(nextStage);
+    if (isGlowing) {
+      messageText.textContent = "✨ Left hand closed! Radiant flower glowing with diamond stars 💎✨";
+    }
   } else {
     // Hand left frame for prolonged time
     unpinchFrames = 0;
@@ -378,20 +556,31 @@ function onResults(results) {
 
   // Draw hand-anchored canvas flower
   drawCanvasFlower(plantX, plantY, currentStage, growth);
+
+  // Render active diamond twinkling particles
+  updateAndDrawDiamondParticles(ctx);
 }
 
-function updateTelemetryUI(rightPinching, rightRatio, leftPinching, leftRatio) {
+function updateTelemetryUI(rightPinching, rightRatio, leftPinching, leftRatio, leftClosed, leftCloseRatio) {
   // Right
   const rightPct = Math.max(0, Math.min(100, Math.round((1 - rightRatio) * 100)));
   rightPinchBar.style.width = `${rightPct}%`;
   rightTelemetry.classList.toggle("pinching", rightPinching);
   rightPinchTag.textContent = rightPinching ? "Pinching!" : `${rightPct}%`;
 
-  // Left
-  const leftPct = Math.max(0, Math.min(100, Math.round((1 - leftRatio) * 100)));
+  // Left (shows closed fist and pinch status)
+  const leftPct = Math.max(0, Math.min(100, Math.round((leftCloseRatio || (1 - leftRatio)) * 100)));
   leftPinchBar.style.width = `${leftPct}%`;
   leftTelemetry.classList.toggle("pinching", leftPinching);
-  leftPinchTag.textContent = leftPinching ? "Pinching!" : `${leftPct}%`;
+  leftTelemetry.classList.toggle("glowing", !!leftClosed);
+
+  if (leftClosed) {
+    leftPinchTag.textContent = "✨ Glowing!";
+  } else if (leftPinching) {
+    leftPinchTag.textContent = "Pinching!";
+  } else {
+    leftPinchTag.textContent = `${leftPct}% Closed`;
+  }
 }
 
 // --- Start Camera & MediaPipe Initialization ---

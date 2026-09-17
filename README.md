@@ -10,7 +10,7 @@ A full-stack web application combining real-time camera computer vision with Goo
 - **Natural Depth-Invariant Gesture Recognition**:
   1. **Raise Hand** → Sprout a botanical green bud 🌱
   2. **Pinch Right Thumb + Index** → Transform bud into a vibrant rose flower 🌸
-  3. **Pinch Left Thumb + Index** → Blossom flower to radiant full bloom with sparkling orbital particles ✨
+  3. **Close Left Hand (Fist)** ➔ Flower glows with radiant luminescence & twinkling diamond stars 💎✨ (or pinch left) → Blossom flower to radiant full bloom with sparkling orbital particles ✨
 - **Full-Stack Localhost Server**:
   - `GET /api/status` — Server health & telemetry
   - `GET /api/garden` — Fetch saved blossoms
@@ -70,6 +70,6 @@ blossom-flower/
 | :--- | :--- | :--- | :--- |
 | **1** | **Raise Hand** | Green botanical bud sprouts | Warm harmonic chime |
 | **2** | **Hold Right Pinch** (Thumb + Index) | Bud blooms into opening flower | Rising two-note chord |
-| **3** | **Hold Left Pinch** (Thumb + Index) | Flower expands to full blossom with orbital sparkles | Celestial arpeggio |
+| **3** | **Close Left Hand** (Fist / Pinch) | Flower illuminates with radiant glow & twinkling diamond stars ✨💎 | Crystalline diamond arpeggio |
 | **↩️** | **Release Fingers** (Unpinch) | Gracefully returns back to bud stage | Soft acoustic tick |
 | **★** | **Save to Garden** | Captures snapshot into your persistent collection | Confirmation chime |

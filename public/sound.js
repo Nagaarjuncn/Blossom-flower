@@ -1,4 +1,4 @@
-// Procedural Audio Engine using browser Web Audio API
+﻿// Procedural Audio Engine using browser Web Audio API
 class SoundManager {
   constructor() {
     this.ctx = null;
@@ -134,6 +134,37 @@ class SoundManager {
       });
     } catch (e) {
       console.warn("Audio error", e);
+    }
+  }
+  // Diamond Star Twinkle sound: Crystalline celestial sparkle arpeggios
+  playDiamondTwinkle() {
+    if (!this.enabled) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    try {
+      const now = this.ctx.currentTime;
+      // High-register crystalline frequencies (C6, E6, G6, B6, C7, E7)
+      const notes = [1046.50, 1318.51, 1567.98, 1975.53, 2093.00, 2637.02];
+      notes.forEach((freq, i) => {
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = "sine";
+        osc.frequency.setValueAtTime(freq, now + i * 0.05);
+
+        // Gentle high shimmer decay
+        gain.gain.setValueAtTime(0.08, now + i * 0.05);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.6 + i * 0.05);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start(now + i * 0.05);
+        osc.stop(now + 0.65 + i * 0.05);
+      });
+    } catch (e) {
+      console.warn("Diamond twinkle audio error", e);
     }
   }
 }
