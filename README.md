@@ -9,14 +9,14 @@ A full-stack web application combining real-time camera computer vision with Goo
 - **Live MediaPipe Hand Tracking**: Runs high-performance hand landmark detection in real time in your browser.
 - **Natural Depth-Invariant Gesture Recognition**:
   1. **Raise Hand** → Sprout a botanical green bud 🌱
-  2. **Pinch Right Thumb + Index** → Transform bud into a vibrant rose flower 🌸
-  3. **Close Left Hand (Fist)** ➔ Flower glows with radiant luminescence & twinkling diamond stars 💎✨ (or pinch left) → Blossom flower to radiant full bloom with sparkling orbital particles ✨
+  2. **Zoom In Right Hand** (bring hand closer or spread fingers) → Bloom into full radiant blossom 🌸 (zoom out to return to bud)
+  3. **Zoom In Left Hand** (bring hand closer or spread fingers) → Flower illuminates with radiant luminescence & twinkling diamond stars 💎✨
 - **Full-Stack Localhost Server**:
   - `GET /api/status` — Server health & telemetry
   - `GET /api/garden` — Fetch saved blossoms
   - `POST /api/garden` — Save blossom snapshots with gesture telemetry
   - `DELETE /api/garden/:id` — Delete saved blossom records
-  - `GET /api/settings` & `POST /api/settings` — Persistent customization (pinch sensitivity, lerp speed, visualization mode)
+  - `GET /api/settings` & `POST /api/settings` — Persistent customization (zoom threshold, lerp speed, visualization mode)
 - **Garden Gallery**: Save snapshots of your bloomed flowers into your persistent local garden!
 - **Procedural Audio Synthesizer**: Delightful, organic chimes and chords created dynamically with the Web Audio API (zero audio file dependencies).
 - **Dual Visual Modes**: Hand-anchored petals following your wrist + Grand Centerpiece botanical flower.
@@ -68,8 +68,8 @@ blossom-flower/
 
 | Step | Action | Visual Result | Audio |
 | :--- | :--- | :--- | :--- |
-| **1** | **Raise Hand** | Green botanical bud sprouts | Warm harmonic chime |
-| **2** | **Hold Right Pinch** (Thumb + Index) | Bud blooms into opening flower | Rising two-note chord |
-| **3** | **Close Left Hand** (Fist / Pinch) | Flower illuminates with radiant glow & twinkling diamond stars ✨💎 | Crystalline diamond arpeggio |
-| **↩️** | **Release Fingers** (Unpinch) | Gracefully returns back to bud stage | Soft acoustic tick |
-| **★** | **Save to Garden** | Captures snapshot into your persistent collection | Confirmation chime |
+| **1** | **Raise Hand** | Green botanical bud sprouts 🌱 | Warm harmonic chime |
+| **2** | **Zoom In Right Hand** (Closer to cam / spread fingers) | Bud blooms into magnificent full blossom 🌸 | Celestial arpeggiated blossom chime |
+| **3** | **Zoom In Left Hand** (Closer to cam / spread fingers) | Flower illuminates with radiant glow & twinkling diamond stars ✨💎 | Crystalline diamond twinkle arpeggios |
+| **↩️** | **Zoom Out / Relax** | Gracefully returns back to bud stage 🌱 | Soft acoustic tick |
+| **★** | **Save to Garden** | Captures snapshot into your persistent digital garden | Confirmation chime |

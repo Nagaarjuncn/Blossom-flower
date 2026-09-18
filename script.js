@@ -73,7 +73,8 @@ const TARGET_GROWTH = {
 
 // Tunables (synced with settings API)
 let config = {
-  pinchThreshold: 0.35,
+  zoomThreshold: 0.45,
+  pinchThreshold: 0.35, // legacy fallback
   growthSpeed: 0.07,
   soundEnabled: true,
   mirrorCamera: true,
@@ -103,20 +104,42 @@ function dist(a, b) {
   return Math.hypot(a.x - b.x, a.y - b.y);
 }
 
-// Normalized Pinch Detection based on hand scale (wrist to middle knuckle)
-function checkPinch(landmarks) {
-  const thumbTip = landmarks[4];
-  const indexTip = landmarks[8];
+// Normalized Hand Zoom Detection based on Camera Proximity & Finger Expansion
+function checkHandZoom(landmarks) {
   const wrist = landmarks[0];
   const middleMcp = landmarks[9];
+  const thumbTip = landmarks[4];
+  const indexTip = landmarks[8];
+  const pinkyTip = landmarks[20];
 
+  // Hand Scale in camera viewport space (wrist to middle knuckle)
   const handScale = dist(wrist, middleMcp) || 0.0001;
-  const pinchDist = dist(thumbTip, indexTip);
-  const ratio = pinchDist / handScale;
+
+  // 1. Proximity Zoom Score (moving hand closer to camera lens)
+  // Normal resting distance handScale is ~0.15 - 0.20; >0.28 is closer/zoomed in
+  const proximityScore = Math.max(0, Math.min(1.0, (handScale - 0.16) / 0.14));
+
+  // 2. Finger Spread Zoom Score (expanding thumb and index like a zoom gesture)
+  const fingerDist = dist(thumbTip, indexTip);
+  const fingerSpread = fingerDist / handScale;
+  const spreadScore = Math.max(0, Math.min(1.0, (fingerSpread - 0.50) / 0.45));
+
+  // 3. Hand Span Openness Score (distance from thumb tip to pinky tip)
+  const handSpan = dist(thumbTip, pinkyTip) / handScale;
+  const spanScore = Math.max(0, Math.min(1.0, (handSpan - 0.90) / 0.55));
+
+  // Combined zoom ratio: triggers whether hand is brought closer OR fingers expanded wide
+  const rawZoom = Math.max(proximityScore, spreadScore * 0.92, spanScore * 0.88);
+  const zoomRatio = Math.max(0, Math.min(1.0, rawZoom));
+
+  const threshold = config.zoomThreshold || config.pinchThreshold || 0.45;
+  const isZoomed = zoomRatio >= threshold;
 
   return {
-    isPinching: ratio < config.pinchThreshold,
-    ratio: Math.min(1.0, Math.max(0, ratio))
+    isZoomed,
+    zoomRatio,
+    handScale,
+    fingerSpread
   };
 }
 
@@ -261,8 +284,8 @@ function transitionStage(nextStage) {
 
   // Update step cards highlight
   cardStep1.classList.toggle("active", currentStage === STAGES.BUD);
-  cardStep2.classList.toggle("active", currentStage === STAGES.FLOWER);
-  cardStep3.classList.toggle("active", currentStage === STAGES.BLOSSOM || isGlowing);
+  cardStep2.classList.toggle("active", currentStage === STAGES.BLOSSOM);
+  cardStep3.classList.toggle("active", isGlowing);
 
   // Save to Garden button visibility (only at blossom)
   if (currentStage === STAGES.BLOSSOM) {
@@ -276,25 +299,16 @@ function transitionStage(nextStage) {
     messageText.textContent = isCameraRunning ? "Raise either hand to plant a seed 🌱" : "Click “Start Camera” to begin";
   } else if (currentStage === STAGES.BUD) {
     if (prev > STAGES.BUD) {
-      // Returned from Flower or Blossom by releasing pinch!
-      messageText.textContent = "Fingers released ↩️ Back to bud stage 🌱 (hold right pinch to flower)";
+      // Returned from Blossom by zooming out!
+      messageText.textContent = "Zoomed out ↩️ Back to bud stage 🌱 (zoom in with right hand to blossom)";
       window.soundEngine.playPinchTick(260);
     } else {
       // First sprouted from NONE
-      messageText.textContent = "Bud sprouted! Hold RIGHT pinch to flower 🌸";
+      messageText.textContent = "Bud sprouted 🌱 Zoom in with RIGHT hand to blossom, LEFT hand to glow ✨";
       window.soundEngine.playBud();
     }
-  } else if (currentStage === STAGES.FLOWER) {
-    if (prev < STAGES.FLOWER) {
-      messageText.textContent = "Flower bloomed! Hold LEFT pinch to blossom ✨ (release to return to bud)";
-      window.soundEngine.playFlower();
-    } else {
-      // Dropped down from Blossom
-      messageText.textContent = "Flower stage 🌸 (hold left pinch to blossom, release to return to bud)";
-      window.soundEngine.playPinchTick(350);
-    }
   } else if (currentStage === STAGES.BLOSSOM) {
-    messageText.textContent = "🌸 Radiant Blossom! Click 'Save to Garden' (release to return to bud)";
+    messageText.textContent = "🌸 Radiant Blossom! (Zoom out to return to bud)";
     window.soundEngine.playBlossom();
   }
 }
@@ -314,7 +328,7 @@ function resetState() {
 resetBtn.addEventListener("click", resetState);
 
 // --- Drawing Functions on Canvas ---
-function drawHandSkeleton(landmarks, isPinching, isClosed = false) {
+function drawHandSkeleton(landmarks, isZoomed, isGlowingHand = false, label = "") {
   if (window.drawConnectors && window.HAND_CONNECTIONS) {
     const points = landmarks.map(p => ({
       x: config.mirrorCamera ? (1 - p.x) : p.x,
@@ -322,14 +336,25 @@ function drawHandSkeleton(landmarks, isPinching, isClosed = false) {
       z: p.z
     }));
 
+    let strokeColor = "#38bdf8"; // default cyan
+    let landmarkColor = "#ffffff";
+
+    if (isGlowingHand) {
+      strokeColor = "#fef08a"; // brilliant diamond yellow/gold
+      landmarkColor = "#67e8f9";
+    } else if (isZoomed) {
+      strokeColor = label === "Right" ? "#f472b6" : "#38bdf8"; // blossom rose pink or cyan
+      landmarkColor = "#ffffff";
+    }
+
     drawConnectors(ctx, points, HAND_CONNECTIONS, {
-      color: isClosed ? "#67e8f9" : (isPinching ? "#a3e635" : "#38bdf8"),
-      lineWidth: 3
+      color: strokeColor,
+      lineWidth: isZoomed ? 4 : 2
     });
     drawLandmarks(ctx, points, {
-      color: isClosed ? "#ffffff" : (isPinching ? "#bef264" : "#ffffff"),
+      color: landmarkColor,
       lineWidth: 1,
-      radius: 3
+      radius: isZoomed ? 4 : 3
     });
   }
 }
@@ -445,45 +470,40 @@ function onResults(results) {
   const hands = results.multiHandLandmarks || [];
   const handedness = results.multiHandedness || [];
 
-  let rightPinching = false;
-  let leftPinching = false;
+  let rightZoom = { isZoomed: false, zoomRatio: 0, handScale: 0 };
+  let leftZoom = { isZoomed: false, zoomRatio: 0, handScale: 0 };
   let anyHandRaisedInFrame = false;
   let refHand = null;
-
-  // Reset telemetry display values
-  let rightRatioDisplay = 1.0;
-  let leftRatioDisplay = 1.0;
-
-  let leftHandClosed = false;
-  let leftCloseRatio = 0;
 
   for (let i = 0; i < hands.length; i++) {
     const landmarks = hands[i];
     const label = handedness[i]?.label; // "Left" or "Right"
-    const pinchResult = checkPinch(landmarks);
-    const closedResult = checkHandClosed(landmarks);
+    const zoomResult = checkHandZoom(landmarks);
     const raised = isHandRaised(landmarks);
 
     if (label === "Right") {
-      rightRatioDisplay = pinchResult.ratio;
-      if (pinchResult.isPinching) rightPinching = true;
-    }
-    if (label === "Left") {
-      leftRatioDisplay = pinchResult.ratio;
-      if (pinchResult.isPinching) leftPinching = true;
-      if (closedResult.isClosed) leftHandClosed = true;
-      leftCloseRatio = closedResult.curlRatio;
+      rightZoom = zoomResult;
+    } else if (label === "Left") {
+      leftZoom = zoomResult;
+    } else {
+      // Fallback based on horizontal position in frame
+      const wristX = landmarks[0].x;
+      if (wristX < 0.5) {
+        leftZoom = zoomResult;
+      } else {
+        rightZoom = zoomResult;
+      }
     }
 
-    if (raised) anyHandRaisedInFrame = true;
+    if (raised || zoomResult.isZoomed) anyHandRaisedInFrame = true;
     refHand = landmarks;
 
     // Draw hand skeleton with highlight
-    drawHandSkeleton(landmarks, pinchResult.isPinching, (label === "Left" && closedResult.isClosed));
+    drawHandSkeleton(landmarks, zoomResult.isZoomed, (label === "Left" && zoomResult.isZoomed), label);
   }
 
-  // Handle Glowing State from Left Hand Closed
-  isGlowing = leftHandClosed;
+  // Handle Glowing State from Left Hand Zoom-In
+  isGlowing = leftZoom.isZoomed;
   flowerWorld.classList.toggle("glowing-mode", isGlowing);
   cardStep3.classList.toggle("glowing", isGlowing);
 
@@ -497,14 +517,14 @@ function onResults(results) {
     if (config.visualizationMode !== "hand") {
       const centerX = canvasElement.width * 0.5;
       const centerY = canvasElement.height * 0.58;
-      if (Math.random() < 0.65) {
+      if (Math.random() < 0.75) {
         spawnDiamondParticle(centerX, centerY);
       }
     }
   }
 
   // Update HUD Telemetry
-  updateTelemetryUI(rightPinching, rightRatioDisplay, leftPinching, leftRatioDisplay, leftHandClosed, leftCloseRatio);
+  updateTelemetryUI(rightZoom, leftZoom);
 
   // Update Plant Anchor Position
   const now = performance.now();
@@ -517,22 +537,17 @@ function onResults(results) {
   const handRecentlySeen = (now - lastHandSeenAt) < HAND_LOST_GRACE_MS;
 
   // --- REVERSIBLE STATE MACHINE EVALUATION ---
-  // If hand is raised / visible:
-  // - If left hand is pinching: BLOSSOM stage!
-  // - Else if right hand is pinching: FLOWER stage!
-  // - If user releases thumb and index finger: returns back to BUD stage!
+  // - If right hand is zooming in: BLOSSOM stage!
+  // - If right hand zooms out / returns: returns back to BUD stage!
   if (anyHandRaisedInFrame || handRecentlySeen) {
     let nextStage;
 
-    if (leftHandClosed || leftPinching) {
+    if (rightZoom.isZoomed) {
       unpinchFrames = 0;
       nextStage = STAGES.BLOSSOM;
-    } else if (rightPinching) {
-      unpinchFrames = 0;
-      nextStage = STAGES.FLOWER;
     } else {
       unpinchFrames++;
-      // If thumb and index released for at least 2 frames (~33ms), return back to BUD!
+      // If right hand is not zoomed in for at least 2 frames (~33ms), return back to BUD!
       if (unpinchFrames >= 2) {
         nextStage = STAGES.BUD;
       } else {
@@ -541,8 +556,14 @@ function onResults(results) {
     }
 
     transitionStage(nextStage);
-    if (isGlowing) {
-      messageText.textContent = "✨ Left hand closed! Radiant flower glowing with diamond stars 💎✨";
+
+    // Dynamic stage messages reflecting active zoom states
+    if (rightZoom.isZoomed && leftZoom.isZoomed) {
+      messageText.textContent = "🌸✨ Full Blossom & Radiant Diamond Twinklings! 💎✨";
+    } else if (rightZoom.isZoomed) {
+      messageText.textContent = "🌸 Right hand zoomed in! Flower bloomed in full blossom (zoom out to bud)";
+    } else if (leftZoom.isZoomed) {
+      messageText.textContent = "✨ Left hand zoomed in! Flower glowing with diamond twinklings 💎✨";
     }
   } else {
     // Hand left frame for prolonged time
@@ -561,25 +582,31 @@ function onResults(results) {
   updateAndDrawDiamondParticles(ctx);
 }
 
-function updateTelemetryUI(rightPinching, rightRatio, leftPinching, leftRatio, leftClosed, leftCloseRatio) {
-  // Right
-  const rightPct = Math.max(0, Math.min(100, Math.round((1 - rightRatio) * 100)));
+function updateTelemetryUI(rightZoom, leftZoom) {
+  // Right Hand: Zoom to Blossom
+  const rightPct = Math.max(0, Math.min(100, Math.round((rightZoom?.zoomRatio || 0) * 100)));
   rightPinchBar.style.width = `${rightPct}%`;
-  rightTelemetry.classList.toggle("pinching", rightPinching);
-  rightPinchTag.textContent = rightPinching ? "Pinching!" : `${rightPct}%`;
-
-  // Left (shows closed fist and pinch status)
-  const leftPct = Math.max(0, Math.min(100, Math.round((leftCloseRatio || (1 - leftRatio)) * 100)));
-  leftPinchBar.style.width = `${leftPct}%`;
-  leftTelemetry.classList.toggle("pinching", leftPinching);
-  leftTelemetry.classList.toggle("glowing", !!leftClosed);
-
-  if (leftClosed) {
-    leftPinchTag.textContent = "✨ Glowing!";
-  } else if (leftPinching) {
-    leftPinchTag.textContent = "Pinching!";
+  rightTelemetry.classList.toggle("zoomed", !!rightZoom?.isZoomed);
+  rightTelemetry.classList.toggle("pinching", !!rightZoom?.isZoomed);
+  if (rightZoom?.isZoomed) {
+    rightPinchTag.textContent = "🌸 Blossomed!";
+  } else if (rightPct > 15) {
+    rightPinchTag.textContent = `Zoom ${rightPct}%`;
   } else {
-    leftPinchTag.textContent = `${leftPct}% Closed`;
+    rightPinchTag.textContent = "Ready (Zoom in)";
+  }
+
+  // Left Hand: Zoom to Glow with Twinklings
+  const leftPct = Math.max(0, Math.min(100, Math.round((leftZoom?.zoomRatio || 0) * 100)));
+  leftPinchBar.style.width = `${leftPct}%`;
+  leftTelemetry.classList.toggle("zoomed", !!leftZoom?.isZoomed);
+  leftTelemetry.classList.toggle("glowing", !!leftZoom?.isZoomed);
+  if (leftZoom?.isZoomed) {
+    leftPinchTag.textContent = "✨ Glowing!";
+  } else if (leftPct > 15) {
+    leftPinchTag.textContent = `Zoom ${leftPct}%`;
+  } else {
+    leftPinchTag.textContent = "Ready (Zoom in)";
   }
 }
 
@@ -852,8 +879,10 @@ settingsModalBackdrop.addEventListener("click", (e) => {
 
 // Settings Input Listeners
 sensitivitySlider.addEventListener("input", (e) => {
-  config.pinchThreshold = parseFloat(e.target.value);
-  sensitivityValue.textContent = config.pinchThreshold.toFixed(2);
+  const val = parseFloat(e.target.value);
+  config.zoomThreshold = val;
+  config.pinchThreshold = val;
+  sensitivityValue.textContent = val.toFixed(2);
   saveSettingsToServer();
 });
 
@@ -898,8 +927,10 @@ async function loadSettingsFromServer() {
       const saved = await res.json();
       Object.assign(config, saved);
 
-      sensitivitySlider.value = config.pinchThreshold;
-      sensitivityValue.textContent = Number(config.pinchThreshold).toFixed(2);
+      const thresh = config.zoomThreshold !== undefined ? config.zoomThreshold : (config.pinchThreshold || 0.45);
+      config.zoomThreshold = thresh;
+      sensitivitySlider.value = thresh;
+      sensitivityValue.textContent = Number(thresh).toFixed(2);
 
       speedSlider.value = config.growthSpeed;
       speedValue.textContent = Number(config.growthSpeed).toFixed(2);

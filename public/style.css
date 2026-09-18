@@ -1,4 +1,4 @@
-﻿/* ==========================================================================
+/* ==========================================================================
    🌸 Gesture Flower — Full Stack Interactive Garden Style System
    ========================================================================== */
 
@@ -1107,7 +1107,26 @@ video {
   }
 }
 
-/* Telemetry & Card Glowing States */
+/* Telemetry & Card Glowing & Zoomed States */
+.telemetry-item.zoomed {
+  border-color: #f472b6 !important;
+  background: rgba(244, 114, 182, 0.18) !important;
+  box-shadow: 0 0 22px rgba(244, 114, 182, 0.45);
+}
+
+.telemetry-item.zoomed .pinch-meter-bar {
+  background: linear-gradient(90deg, #ec4899, #f472b6, #fef08a) !important;
+  box-shadow: 0 0 14px #ec4899;
+}
+
+.telemetry-item.zoomed .pinch-tag {
+  background: rgba(244, 114, 182, 0.3) !important;
+  color: #fbcfe8 !important;
+  border-color: rgba(244, 114, 182, 0.7) !important;
+  box-shadow: 0 0 12px rgba(244, 114, 182, 0.5);
+  font-weight: 700;
+}
+
 .telemetry-item.glowing {
   border-color: #38bdf8 !important;
   background: rgba(14, 165, 233, 0.2) !important;

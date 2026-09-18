@@ -28,7 +28,8 @@ if (!fs.existsSync(GARDEN_FILE)) {
 
 if (!fs.existsSync(SETTINGS_FILE)) {
   fs.writeFileSync(SETTINGS_FILE, JSON.stringify({
-    pinchSensitivity: 0.35,
+    zoomThreshold: 0.45,
+    pinchSensitivity: 0.45,
     growthSpeed: 0.06,
     soundEnabled: true,
     mirrorCamera: true,

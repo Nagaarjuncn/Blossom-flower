@@ -1,5 +1,6 @@
 {
-  "pinchSensitivity": 0.38,
+  "zoomThreshold": 0.45,
+  "pinchSensitivity": 0.45,
   "growthSpeed": 0.06,
   "soundEnabled": true,
   "mirrorCamera": true,

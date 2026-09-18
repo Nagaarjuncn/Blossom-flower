@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -95,18 +95,18 @@
         <!-- Real-time Gesture Telemetry HUD -->
         <div class="telemetry-hud" id="telemetryHud">
           <div class="telemetry-item" id="rightTelemetry">
-            <div class="hand-label">Right Hand</div>
+            <div class="hand-label">Right Hand (Zoom to Blossom 🌸)</div>
             <div class="pinch-meter-wrap">
               <div class="pinch-meter-bar" id="rightPinchBar"></div>
             </div>
-            <span class="pinch-tag" id="rightPinchTag">Ready</span>
+            <span class="pinch-tag" id="rightPinchTag">Ready (Zoom in)</span>
           </div>
           <div class="telemetry-item" id="leftTelemetry">
-            <div class="hand-label">Left Hand (Close / Pinch)</div>
+            <div class="hand-label">Left Hand (Zoom to Glow ✨)</div>
             <div class="pinch-meter-wrap">
               <div class="pinch-meter-bar" id="leftPinchBar"></div>
             </div>
-            <span class="pinch-tag" id="leftPinchTag">Ready</span>
+            <span class="pinch-tag" id="leftPinchTag">Ready (Zoom in)</span>
           </div>
         </div>
 
@@ -139,10 +139,10 @@
 
       <div class="card" id="cardStep2">
         <div class="card-step-badge">2</div>
-        <div class="card-icon">🤏</div>
+        <div class="card-icon">🔍</div>
         <div class="card-content">
-          <b>2. Hold Right Pinch</b>
-          <p>Hold thumb & index to bloom into a flower 🌸 (Release to return to bud)</p>
+          <b>2. Zoom In Right Hand</b>
+          <p>Bring right hand closer or expand fingers to bloom into full blossom 🌸 (Zoom out to return to bud)</p>
         </div>
         <div class="card-indicator"></div>
       </div>
@@ -151,8 +151,8 @@
         <div class="card-step-badge">3</div>
         <div class="card-icon">✨</div>
         <div class="card-content">
-          <b>3. Close Left Hand</b>
-          <p>Close left hand into a fist to make flower glow with twinkling diamond stars 💎✨</p>
+          <b>3. Zoom In Left Hand</b>
+          <p>Bring left hand closer or expand fingers to make flower glow with diamond twinklings 💎✨</p>
         </div>
         <div class="card-indicator"></div>
       </div>
@@ -206,12 +206,12 @@
       <div class="modal-body">
         <div class="setting-item">
           <div class="setting-label">
-            <b>Pinch Sensitivity Threshold</b>
-            <span>Lower = triggers more easily; Higher = requires tighter pinch</span>
+            <b>Zoom Sensitivity Threshold</b>
+            <span>Lower = triggers zoom more easily; Higher = requires closer / wider hand</span>
           </div>
           <div class="slider-row">
-            <input type="range" id="sensitivitySlider" min="0.2" max="0.55" step="0.01" value="0.35">
-            <span id="sensitivityValue">0.35</span>
+            <input type="range" id="sensitivitySlider" min="0.25" max="0.75" step="0.01" value="0.45">
+            <span id="sensitivityValue">0.45</span>
           </div>
         </div>
 
